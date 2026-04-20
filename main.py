@@ -3,91 +3,127 @@ import networkx as nx
 from pyvis.network import Network
 import streamlit.components.v1 as components
 
-# 1. Налаштування теми та шрифтів через CSS
-st.set_page_config(page_title="Network Analysis Pro", layout="wide")
+# 1. Налаштування темного дизайну та шрифтів
+st.set_page_config(page_title="Network Analysis System", layout="wide")
 
 st.markdown("""
     <style>
-    /* Підключення шрифту та змінення розміру основного тексту */
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700&display=swap');
+    /* Підключення шрифту Inter для технологічного вигляду */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
 
+    /* Глобальні налаштування кольорів та шрифтів */
     html, body, [class*="css"] {
-        font-family: 'Montserrat', sans-serif;
-        font-size: 18px; /* Збільшений розмір слів */
+        font-family: 'Inter', sans-serif;
+        background-color: #0E1117; /* Глибокий темний фон */
+        color: #E0E0E0;
     }
 
-    /* Стилізація заголовків */
-    h1 {
-        color: #1E3A8A !important;
-        font-size: 3rem !important;
+    /* Стилізація головного заголовка */
+    .main-title {
+        font-size: 3.5rem !important;
+        font-weight: 800 !important;
+        background: linear-gradient(90deg, #00C6FF, #0072FF); /* Градієнтний синій */
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
         text-align: center;
-        padding-bottom: 20px;
+        margin-bottom: 30px;
+        letter-spacing: -1px;
     }
 
-    /* Картки для метрик */
+    /* Стилізація карток для метрик */
     .metric-card {
-        background-color: #f0f2f6;
-        border-radius: 15px;
-        padding: 20px;
-        border-left: 5px solid #1E3A8A;
-        margin-bottom: 10px;
+        background-color: #1A1C23;
+        border: 1px solid #2D2E3A;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        transition: transform 0.2s;
+    }
+    .metric-card:hover {
+        transform: translateY(-5px);
+        border-color: #0072FF;
+    }
+    .metric-label {
+        color: #888;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .metric-value {
+        color: #00C6FF;
+        font-size: 1.4rem;
+        font-weight: 600;
+    }
+
+    /* Кастомізація кнопок */
+    .stButton>button {
+        width: 100%;
+        border-radius: 8px;
+        background-color: #0072FF !important;
+        color: white !important;
+        border: none !important;
+        font-weight: 600;
+        padding: 0.5rem 1rem;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# Заголовок
-st.title("Аналітична Система Центральності")
+# Використання кастомного класу для заголовка
+st.markdown('<h1 class="main-title">Network Analysis Pro</h1>', unsafe_allow_html=True)
 
-# Ініціалізація даних (згідно з вашою дисципліною)
+# Ініціалізація графа
 if 'G' not in st.session_state:
     G = nx.Graph()
     G.add_edges_from([
-        ("Core_Router", "Switch_Dept1"), ("Core_Router", "Switch_Dept2"),
-        ("Switch_Dept1", "PC_User1"), ("Switch_Dept1", "PC_User2"),
-        ("Switch_Dept2", "Database_Srv"), ("Database_Srv", "Core_Router")
+        ("Gateway", "Main_Switch"), ("Main_Switch", "Server_Farm"),
+        ("Main_Switch", "User_VLAN"), ("Server_Farm", "DB_Cluster"),
+        ("User_VLAN", "Workstation_1"), ("DB_Cluster", "Gateway")
     ])
     st.session_state.G = G
 
-# Розподіл інтерфейсу на вкладки
-tab1, tab2 = st.tabs(["📊 Аналіз та Метрики", "🌐 Інтерактивна Топологія"])
+# Навігація через вкладки
+tab1, tab2 = st.tabs(["📊 Analytics Engine", "🌐 Visual Infrastructure"])
 
 with tab1:
-    col1, col2 = st.columns([1, 1])
+    col1, col2 = st.columns([1, 1.2])
     
     with col1:
-        st.header("Додати новий вузол")
-        node_a = st.text_input("Назва вузла A (напр. Firewall)")
-        node_b = st.text_input("Назва вузла B (напр. DMZ)")
-        if st.button("З'єднати вузли"):
+        st.markdown("### 🛠 Configuration")
+        node_a = st.text_input("Source Node")
+        node_b = st.text_input("Target Node")
+        if st.button("Deploy Connection"):
             if node_a and node_b:
                 st.session_state.G.add_edge(node_a, node_b)
                 st.rerun()
 
     with col2:
-        st.header("Результати обчислень")
+        st.markdown("### 📉 Centrality Metrics")
         centrality = nx.degree_centrality(st.session_state.G)
+        
+        # Вивід результатів через кастомні HTML-картки
         for node, val in sorted(centrality.items(), key=lambda x: x[1], reverse=True):
             st.markdown(f"""
                 <div class="metric-card">
-                    <strong>Вузол:</strong> {node}<br>
-                    <strong>Центральність:</strong> {val:.4f}
+                    <div class="metric-label">Node Identifier: {node}</div>
+                    <div class="metric-value">Centrality Index: {val:.4f}</div>
                 </div>
             """, unsafe_allow_html=True)
 
 with tab2:
-    st.header("Візуалізація мережевої інфраструктури")
-    net = Network(height="600px", width="100%", bgcolor="#ffffff", font_color="#1E3A8A")
+    st.markdown("### 🕸 Infrastructure Visualization")
+    # Налаштування візуалізації (темна тема для графа)
+    net = Network(height="600px", width="100%", bgcolor="#0E1117", font_color="#E0E0E0")
     
-    # Налаштування дизайну графа
     for node in st.session_state.G.nodes():
         score = centrality[node]
-        net.add_node(node, label=node, size=score*150, color="#3B82F6", border_width=2)
+        # Колір вузла залежить від його важливості (від синього до яскраво-блакитного)
+        net.add_node(node, label=node, size=score*200, color="#00C6FF", border_width=2, font={'size': 18})
         
     net.from_nx(st.session_state.G)
-    
-    # Додавання можливості фізичної взаємодії
     net.toggle_physics(True)
-    net.save_graph("network.html")
     
-    with open("network.html", 'r', encoding='utf-8') as f:
+    # Використання тимчасового файлу для відображення
+    net.save_graph("network_pro.html")
+    with open("network_pro.html", 'r', encoding='utf-8') as f:
         components.html(f.read(), height=650)
